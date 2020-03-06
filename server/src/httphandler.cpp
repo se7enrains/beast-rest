@@ -6,7 +6,7 @@
 
 HttpHandler::HttpHandler(tcp::acceptor &acceptor) :
     acceptor(acceptor),
-    socket(tcp::socket(acceptor.get_executor().context())) { }
+    socket(tcp::socket(acceptor.get_executor())) { }
 
 void HttpHandler::accept() {
     beast::error_code ec;
@@ -53,9 +53,9 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
             //Check whether json is valid for parsing
             doc.Parse((char*) request.body().data().data());
             //getting path to file and file name
-            std::string filePath = doc["file-path"].GetString();
+            std::string filePath = std::string("files/").append(doc["file-path"].GetString());
             std::vector<std::string> pathParts;
-            boost::split(filePath, pathParts, boost::is_any_of("/"));
+            boost::split(pathParts, filePath, boost::is_any_of("/"));
             if (pathParts.size() > 1) {
                 std::string dirConstructorPath = "";
                 for (int i = 0; i < pathParts.size() - 1; i++) {
@@ -117,7 +117,7 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
 void HttpHandler::sendBadRespononse(beast::http::status status,
                                     const std::string& error) {
     beast::http::response<beast::http::string_body> response;
-    response.result(beast::http::status::ok);
+    response.result(status);
     response.keep_alive(false);
     response.set(beast::http::field::server, "Beast");
     response.set(beast::http::field::content_type, "text/plain");
@@ -131,4 +131,8 @@ void HttpHandler::sendBadRespononse(beast::http::status status,
         socket.shutdown(tcp::socket::shutdown_send, ec);
         accept();
     });
+}
+
+void HttpHandler::start() {
+    accept();
 }
