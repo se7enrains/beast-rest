@@ -17,4 +17,5 @@ void Server::run() {
     }
 
     ioContext.run();
+    std::cout << "server started" << std::endl;
 }

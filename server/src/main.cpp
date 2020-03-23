@@ -4,10 +4,11 @@
 
 int main() {
     auto const address = "127.0.0.1";
-    int const port = 8080;
+    int const port = 37456;
     int threadsNumber = 1;
 
-    Server server = Server(address, port, threadsNumber);
+    Server server(address, port, threadsNumber);
+    server.run();
 
     return 0;
 }

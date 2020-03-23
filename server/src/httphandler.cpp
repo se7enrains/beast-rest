@@ -9,6 +9,7 @@ HttpHandler::HttpHandler(tcp::acceptor &acceptor) :
     socket(tcp::socket(acceptor.get_executor())) { }
 
 void HttpHandler::accept() {
+    std::cout << "accept started" << std::endl;
     beast::error_code ec;
     socket.close(ec);
 
@@ -16,17 +17,18 @@ void HttpHandler::accept() {
             socket,
             [this](boost::beast::error_code ec){
                 if (ec) {
-                    std::cout << "Error code: " << ec.value() << " " << ec.message();
+                    std::cout << "Error code: " << ec.value() << " " << ec.message() << std::endl;
                     accept();
                 } else {
                     std::cout << "Accepted request from " << socket.remote_endpoint().address()
-                              << ":" << socket.remote_endpoint().port();
+                              << ":" << socket.remote_endpoint().port() << std::endl;
                     readRequest();
                 }
             });
 }
 
 void HttpHandler::readRequest() {
+    std::cout << "readRequest started " << socket.is_open() << std::endl;
     parser.emplace(
             std::piecewise_construct,
             std::make_tuple(),
@@ -37,6 +39,7 @@ void HttpHandler::readRequest() {
                             *parser,
                             [this](beast::error_code ec, std::size_t){
         if (ec) {
+            std::cout << "readRequest failed. Error code: " << ec.value() << " " << ec.message() << std::endl;
             accept();
         } else {
             handleRequest(parser->get());
@@ -45,19 +48,23 @@ void HttpHandler::readRequest() {
 }
 
 void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &request) {
+    std::cout << "handleRequest started" << std::endl;
     switch  (request.method()) {
         case beast::http::verb::post: {
             //get file and save
             rapidjson::Document doc;
             //TO DO
             //Check whether json is valid for parsing
-            doc.Parse((char*) request.body().data().data());
+            std::string body = (char*) request.body().data().data();
+            body[body.find_last_of('}') + 1] = '\0';
+            doc.Parse(body.c_str());
+            assert(doc.IsObject());
             //getting path to file and file name
             std::string filePath = std::string("files/").append(doc["file-path"].GetString());
             std::vector<std::string> pathParts;
             boost::split(pathParts, filePath, boost::is_any_of("/"));
             if (pathParts.size() > 1) {
-                std::string dirConstructorPath = "";
+                std::string dirConstructorPath;
                 for (int i = 0; i < pathParts.size() - 1; i++) {
                     dirConstructorPath.append(pathParts[i]).append("/");
                     boost::filesystem::create_directory(dirConstructorPath);
@@ -80,7 +87,6 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
                 openFileStream.close();
             }
             //make json
-            doc.Clear();
             doc.SetObject();
             rapidjson::Value fileName, fileData;
             fileName.SetString(rapidjson::StringRef(pathParts.back().c_str()));
@@ -91,6 +97,7 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
             rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
             doc.Accept(writer);
             //generate response
+            std::cout << "generate response" << std::endl;
             beast::http::response<beast::http::string_body> response;
             response.result(beast::http::status::ok);
             response.keep_alive(false);
@@ -99,6 +106,7 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
             response.body() = stringBuffer.GetString();
             response.prepare_payload();
             //write to socket
+            std::cout << "Write to socket" << std::endl;
             beast::http::response_serializer<boost::beast::http::string_body> responseSerializer(response);
             beast::http::async_write(socket,
                                      responseSerializer,
@@ -107,7 +115,9 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
                                          accept();
                                      });
         }
+        break;
         default: {
+            std::cout << "bad response" << std::endl;
             sendBadRespononse(beast::http::status::bad_request,
                               "Invalid request method '" + request.method_string().to_string() +"'\r\n");
         }
@@ -116,6 +126,7 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
 
 void HttpHandler::sendBadRespononse(beast::http::status status,
                                     const std::string& error) {
+    std::cout << "send bad response" << std::endl;
     beast::http::response<beast::http::string_body> response;
     response.result(status);
     response.keep_alive(false);

@@ -6,7 +6,7 @@
 
 void Client::getFilePath() {
     std::cout << "Enter path to file for sending: ";
-    std::cin >> filePath;
+    std::cin >> sFilePath;
     std::cout << "Enter path for saving on server: ";
     std::cin >> path;
 }
@@ -17,8 +17,12 @@ Client::Client(const std::string& ip, int port) :
 
 void Client::start() {
     connect();
+    getFilePath();
     prepareMessage();
-
+    sendMessage();
+    getResponse();
+    saveFile();
+    closeConnection();
 }
 
 void Client::connect() {
@@ -34,7 +38,8 @@ void Client::prepareMessage() {
     std::string line;
     std::string sFileData;
     if (openFileStream.is_open()) {
-        while (std::getline(openFileStream, line)) {
+        while (!openFileStream.eof()) {
+            std::getline(openFileStream, line);
             sFileData.append(line).append("\n");
         }
         openFileStream.close();
@@ -42,7 +47,7 @@ void Client::prepareMessage() {
 
     dom.SetObject();
     rapidjson::Value filePath, fileData;
-    filePath.SetString(rapidjson::StringRef(sFilePath.c_str()));
+    filePath.SetString(rapidjson::StringRef(path.c_str()));
     fileData.SetString(rapidjson::StringRef(sFileData.c_str()));
     dom.AddMember("file-path", filePath, dom.GetAllocator());
     dom.AddMember("file-data", fileData, dom.GetAllocator());
@@ -50,31 +55,60 @@ void Client::prepareMessage() {
     rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
     dom.Accept(writer);
 
-    beast::http::request<beast::http::string_body> request;
     request.method(beast::http::verb::post);
     request.keep_alive(true);
     request.set(beast::http::field::host, ip);
+    request.target("1.1");
+    request.version(11);
     request.set(beast::http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     request.set(beast::http::field::content_type, "application/json");
     request.body() = stringBuffer.GetString();
     request.prepare_payload();
+}
 
+void Client::sendMessage() {
     boost::beast::error_code ec;
     beast::http::request_serializer<boost::beast::http::string_body> requestSerializer(request);
     beast::http::write(*socket, requestSerializer, ec);
     if (ec) {
         std::cerr << ec << std::endl;
+        socket->close();
     }
 }
 
-const beast::http::response<Client::responseBodyType>& Client::getResponse() {
+void Client::getResponse() {
     beast::http::read(*socket,
                       buffer,
                       parser);
-    return parser.get();
+    response = parser.get();
+    parser.release();
 }
 
-void Client::saveFile(const beast::http::response<Client::responseBodyType> & response) {
+void Client::saveFile() {
     rapidjson::Document doc;
-    doc.Parse((char*) response.body().data().data());
+    std::string body = (char*) response.body().data().data();
+    body[body.find_last_of('}') + 1] = '\0';
+    doc.Parse(body.c_str());
+    assert(doc.IsObject());
+    std::string fileName = std::string("files/").append(doc["file-name"].GetString());
+    std::vector<std::string> pathParts;
+    boost::split(pathParts, fileName, boost::is_any_of("/"));
+    if (pathParts.size() > 1) {
+        std::string dirConstructorPath;
+        for (int i = 0; i < pathParts.size() - 1; i++) {
+            dirConstructorPath.append(pathParts[i]).append("/");
+            boost::filesystem::create_directory(dirConstructorPath);
+        }
+    }
+    //creating file at specified directory and writing data to it
+    std::ofstream saveFileStream(fileName);
+    saveFileStream << doc["file-data"].GetString();
+    saveFileStream.close();
 }
+
+void Client::closeConnection() {
+    socket->close();
+    request.clear();
+    response.clear();
+}
+

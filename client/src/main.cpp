@@ -5,7 +5,10 @@
 
 int main() {
     auto const address = "127.0.0.1";
-    int const port = 8080;
+    int const port = 37456;
 
+    Client client(address, port);
+
+    client.start();
 
 }

@@ -9,6 +9,9 @@
 #include <fstream>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -25,19 +28,23 @@ private:
 
     std::string ip;
     int port;
-    std::string filePath;
+    std::string sFilePath;
     std::string path;
     boost::asio::io_context ioContext;
     boost::asio::ip::tcp::socket* socket;
     beast::flat_buffer buffer;
+    beast::http::request<beast::http::string_body> request;
+    beast::http::response<responseBodyType> response;
     beast::http::response_parser<responseBodyType, std::allocator<char>> parser;
+
 
     void getFilePath();
     void connect();
     void prepareMessage();
     void sendMessage();
-    const beast::http::response<responseBodyType>& getResponse();
-    void saveFile(const beast::http::response<responseBodyType>& response);
+    void getResponse();
+    void saveFile();
+    void closeConnection();
 };
 
 
