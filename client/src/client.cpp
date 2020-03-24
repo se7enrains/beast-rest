@@ -34,26 +34,25 @@ void Client::connect() {
 }
 
 void Client::prepareMessage() {
-    std::ifstream openFileStream(sFilePath);
-    std::string line;
+    std::ifstream openFileStream(sFilePath, std::ios::binary);
     std::string sFileData;
     if (openFileStream.is_open()) {
-        while (!openFileStream.eof()) {
-            std::getline(openFileStream, line);
-            sFileData.append(line).append("\n");
-        }
+        std::istreambuf_iterator<char> eos;
+        std::istreambuf_iterator<char> iit (openFileStream);
+        while (iit!=eos) sFileData+=*iit++;
         openFileStream.close();
     }
 
     dom.SetObject();
     rapidjson::Value filePath, fileData;
     filePath.SetString(rapidjson::StringRef(path.c_str()));
-    fileData.SetString(rapidjson::StringRef(sFileData.c_str()));
+    fileData.SetString(rapidjson::StringRef(sFileData.c_str(), sFileData.size()));
     dom.AddMember("file-path", filePath, dom.GetAllocator());
     dom.AddMember("file-data", fileData, dom.GetAllocator());
     rapidjson::StringBuffer stringBuffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
     dom.Accept(writer);
+    std::cout << stringBuffer.GetString() << std::endl;
 
     request.method(beast::http::verb::post);
     request.keep_alive(true);
@@ -89,7 +88,6 @@ void Client::saveFile() {
     std::string body = (char*) response.body().data().data();
     body[body.find_last_of('}') + 1] = '\0';
     doc.Parse(body.c_str());
-    assert(doc.IsObject());
     std::string fileName = std::string("files/").append(doc["file-name"].GetString());
     std::vector<std::string> pathParts;
     boost::split(pathParts, fileName, boost::is_any_of("/"));
@@ -101,8 +99,9 @@ void Client::saveFile() {
         }
     }
     //creating file at specified directory and writing data to it
-    std::ofstream saveFileStream(fileName);
-    saveFileStream << doc["file-data"].GetString();
+    std::ofstream saveFileStream(fileName, std::ios::binary);
+    std::string data(doc["file-data"].GetString(), doc["file-data"].GetStringLength());
+    saveFileStream << data << std::endl;
     saveFileStream.close();
 }
 

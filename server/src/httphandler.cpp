@@ -28,7 +28,7 @@ void HttpHandler::accept() {
 }
 
 void HttpHandler::readRequest() {
-    std::cout << "readRequest started " << socket.is_open() << std::endl;
+    std::cout << "readRequest started " << std::endl;
     parser.emplace(
             std::piecewise_construct,
             std::make_tuple(),
@@ -53,12 +53,9 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
         case beast::http::verb::post: {
             //get file and save
             rapidjson::Document doc;
-            //TO DO
-            //Check whether json is valid for parsing
             std::string body = (char*) request.body().data().data();
             body[body.find_last_of('}') + 1] = '\0';
             doc.Parse(body.c_str());
-            assert(doc.IsObject());
             //getting path to file and file name
             std::string filePath = std::string("files/").append(doc["file-path"].GetString());
             std::vector<std::string> pathParts;
@@ -71,26 +68,27 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
                 }
             }
             //creating file at specified directory and writing data to it
-            std::ofstream saveFileStream(filePath);
-            saveFileStream << doc["file-data"].GetString();
+            std::ofstream saveFileStream(filePath, std::ios::binary);
+            std::string data(doc["file-data"].GetString(), doc["file-data"].GetStringLength());
+            saveFileStream << data << std::endl;
             saveFileStream.close();
 
             //send same file in response
             //reading file
-            std::ifstream openFileStream(filePath);
+            std::ifstream openFileStream(filePath, std::ios::binary);
             std::string line;
             std::string sFileData;
             if (openFileStream.is_open()) {
-                while (std::getline(openFileStream, line)) {
-                    sFileData.append(line).append("\n");
-                }
+                std::istreambuf_iterator<char> eos;
+                std::istreambuf_iterator<char> iit (openFileStream);
+                while (iit!=eos) sFileData+=*iit++;
                 openFileStream.close();
             }
             //make json
             doc.SetObject();
             rapidjson::Value fileName, fileData;
             fileName.SetString(rapidjson::StringRef(pathParts.back().c_str()));
-            fileData.SetString(rapidjson::StringRef(sFileData.c_str()));
+            fileData.SetString(rapidjson::StringRef(sFileData.c_str(), sFileData.size()));
             doc.AddMember("file-name", fileName, doc.GetAllocator());
             doc.AddMember("file-data", fileData, doc.GetAllocator());
             rapidjson::StringBuffer stringBuffer;
@@ -146,4 +144,10 @@ void HttpHandler::sendBadRespononse(beast::http::status status,
 
 void HttpHandler::start() {
     accept();
+}
+
+HttpHandler::~HttpHandler() {
+    if (socket.is_open()) {
+        socket.close();
+    }
 }

@@ -36,6 +36,7 @@ private:
                            const std::string& error);
 public:
     HttpHandler(tcp::acceptor& acceptor);
+    ~HttpHandler();
     void start();
 };
 

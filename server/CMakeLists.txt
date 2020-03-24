@@ -4,11 +4,17 @@ project(server)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(Boost COMPONENTS system coroutine filesystem REQUIRED)
+FIND_LIBRARY(LIBCONFIGPP_LIBRARY config++
+        /usr/local/lib
+        /usr/lib
+        )
 include_directories(include ${Boost_INCLUDE_DIRS})
 add_executable(server
         src/main.cpp
         src/server.cpp
-        src/httphandler.cpp)
+        src/httphandler.cpp
+        src/confighandler.cpp)
 
 target_link_libraries(server
-        ${Boost_LIBRARIES})
+        ${Boost_LIBRARIES}
+        ${LIBCONFIGPP_LIBRARY})
