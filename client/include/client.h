@@ -24,8 +24,6 @@ public:
     Client(const std::string& ip, int port);
     void run();
 private:
-    using responseBodyType = beast::http::basic_dynamic_body<beast::flat_buffer>;
-
     std::string ip;
     int port;
     std::string sFilePath;
@@ -34,8 +32,8 @@ private:
     boost::asio::ip::tcp::socket* socket;
     beast::flat_buffer buffer;
     beast::http::request<beast::http::string_body> request;
-    beast::http::response<responseBodyType> response;
-    beast::http::response_parser<responseBodyType, std::allocator<char>> parser;
+    beast::http::response<beast::http::string_body> response;
+    beast::http::response_parser<beast::http::string_body, std::allocator<char>> parser;
 
 
     void getFilePath();

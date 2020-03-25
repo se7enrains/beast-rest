@@ -1,7 +1,7 @@
 #include <iostream>
 #include "server.h"
 #include "confighandler.h"
-
+#include <boost/version.hpp>
 
 int main() {
     std::string path, ip, port, threadsNumber;

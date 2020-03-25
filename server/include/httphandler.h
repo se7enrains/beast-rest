@@ -22,16 +22,14 @@ using tcp = asio::ip::tcp;
 
 class HttpHandler {
 private:
-    using requestBodyType = beast::http::basic_dynamic_body<beast::flat_buffer>;
-
     tcp::acceptor& acceptor;
     tcp::socket socket;
-    boost::optional<beast::http::request_parser<requestBodyType, std::allocator<char>>> parser;
-    beast::flat_buffer buffer;
+    boost::optional<beast::http::request_parser<beast::http::string_body, std::allocator<char>>> parser;
+    beast::multi_buffer buffer;
 
     void accept();
     void readRequest();
-    void handleRequest(const beast::http::request<requestBodyType>& request);
+    void handleRequest(const beast::http::request<beast::http::string_body>& request);
     void sendBadRespononse(beast::http::status status,
                            const std::string& error);
 public:

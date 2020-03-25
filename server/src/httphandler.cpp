@@ -47,13 +47,13 @@ void HttpHandler::readRequest() {
     });
 }
 
-void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &request) {
+void HttpHandler::handleRequest(const beast::http::request<beast::http::string_body> &request) {
     std::cout << "handleRequest started" << std::endl;
     switch  (request.method()) {
         case beast::http::verb::post: {
             //get file and save
             rapidjson::Document doc;
-            std::string body = (char*) request.body().data().data();
+            std::string body = request.body();
             body[body.find_last_of('}') + 1] = '\0';
             doc.Parse(body.c_str());
             //getting path to file and file name
@@ -109,7 +109,7 @@ void HttpHandler::handleRequest(const beast::http::request<requestBodyType> &req
             beast::http::async_write(socket,
                                      responseSerializer,
                                      [this](boost::beast::error_code ec, std::size_t) {
-                                         socket.shutdown(tcp::socket::shutdown_send, ec);
+//                                         socket.shutdown(tcp::socket::shutdown_send, ec);
                                          accept();
                                      });
         }

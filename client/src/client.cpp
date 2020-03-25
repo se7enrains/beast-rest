@@ -84,7 +84,7 @@ void Client::getResponse() {
 
 void Client::saveFile() {
     rapidjson::Document doc;
-    std::string body = (char*) response.body().data().data();
+    std::string body = response.body();
     body[body.find_last_of('}') + 1] = '\0';
     doc.Parse(body.c_str());
     std::string fileName = std::string("files/").append(doc["file-name"].GetString());
@@ -106,6 +106,7 @@ void Client::saveFile() {
 
 void Client::closeConnection() {
     socket->close();
+    delete socket;
     request.clear();
     response.clear();
 }
