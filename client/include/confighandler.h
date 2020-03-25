@@ -21,8 +21,6 @@ public:
     std::string getSetting(const std::string& setting);
     std::string getError();
     explicit ConfigHandler(const std::string& path);
-    std::string getIp();
-    std::string getPort();
 };
 
 

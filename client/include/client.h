@@ -22,7 +22,7 @@ class Client {
 public:
     rapidjson::Document dom;
     Client(const std::string& ip, int port);
-    void start();
+    void run();
 private:
     using responseBodyType = beast::http::basic_dynamic_body<beast::flat_buffer>;
 

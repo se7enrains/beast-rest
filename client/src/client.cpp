@@ -15,7 +15,7 @@ Client::Client(const std::string& ip, int port) :
     ip(ip),
     port(port) { }
 
-void Client::start() {
+void Client::run() {
     connect();
     getFilePath();
     prepareMessage();
@@ -52,7 +52,6 @@ void Client::prepareMessage() {
     rapidjson::StringBuffer stringBuffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
     dom.Accept(writer);
-    std::cout << stringBuffer.GetString() << std::endl;
 
     request.method(beast::http::verb::post);
     request.keep_alive(true);

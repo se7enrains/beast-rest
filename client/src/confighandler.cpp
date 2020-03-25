@@ -31,7 +31,7 @@ ConfigHandler::ConfigHandler(const std::string& path) {
 std::string ConfigHandler::getSetting(const std::string& setting) {
     if (ok) {
         try {
-            return cfg.lookup("server.port").c_str();
+            return cfg.lookup(setting).c_str();
         }
         catch (const SettingNotFoundException &snfex) {
             ok = false;

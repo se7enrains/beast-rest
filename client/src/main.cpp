@@ -5,11 +5,17 @@
 #include "confighandler.h"
 
 int main() {
-    auto const address = "127.0.0.1";
-    int const port = 37456;
+    std::string path, ip, port;
+    std::cout << "Enter path to config: ";
+    std::cin >> path;
+    ConfigHandler cfg(path);
+    ip = cfg.getSetting("server.ip");
+    port = cfg.getSetting("server.port");
 
-    Client client(address, port);
-
-    client.start();
-
+    if(cfg.isOk()) {
+        Client client(ip, std::stoi(port));
+        client.run();
+    } else {
+        std::cout << cfg.getError() << std::endl;
+    }
 }

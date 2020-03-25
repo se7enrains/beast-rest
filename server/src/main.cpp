@@ -4,12 +4,20 @@
 
 
 int main() {
-    auto const address = "127.0.0.1";
-    int const port = 37456;
-    int threadsNumber = 1;
+    std::string path, ip, port, threadsNumber;
+    std::cout << "Enter path to config: ";
+    std::cin >> path;
+    ConfigHandler cfg(path);
+    ip = cfg.getSetting("server.ip");
+    port = cfg.getSetting("server.port");
+    threadsNumber = cfg.getSetting("server.threads");
 
-    Server server(address, port, threadsNumber);
-    server.run();
+    if(cfg.isOk()) {
+        Server server(ip, std::stoi(port), std::stoi(threadsNumber));
+        server.run();
+    } else {
+        std::cout << cfg.getError() << std::endl;
+    }
 
     return 0;
 }
