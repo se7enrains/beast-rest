@@ -16,6 +16,6 @@ void Server::run() {
         handlers.back().start();
     }
 
-    ioContext.run();
     std::cout << "server started" << std::endl;
+    ioContext.run();
 }

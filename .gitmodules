@@ -1,0 +1,6 @@
+[submodule "extern/rapidjson"]
+	path = extern/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "extern/libconfig"]
+	path = extern/libconfig
+	url = https://github.com/hyperrealm/libconfig.git

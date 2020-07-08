@@ -11,9 +11,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <iostream>
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
+#include "../../extern/rapidjson/include/rapidjson/document.h"
+#include "../../extern/rapidjson/include/rapidjson/stringbuffer.h"
+#include "../../extern/rapidjson/include/rapidjson/writer.h"
 #include <fstream>
 
 namespace asio = boost::asio;
