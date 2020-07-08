@@ -4,12 +4,10 @@
 
 #include "httphandler.h"
 
-HttpHandler::HttpHandler(tcp::acceptor &acceptor) :
-    acceptor(acceptor),
-    socket(tcp::socket(acceptor.get_executor())) { }
+HttpHandler::HttpHandler(tcp::acceptor &acceptor)
+: acceptor(acceptor), socket(tcp::socket(acceptor.get_executor())) { }
 
 void HttpHandler::accept() {
-    std::cout << "accept started" << std::endl;
     beast::error_code ec;
     socket.close(ec);
 
@@ -28,12 +26,11 @@ void HttpHandler::accept() {
 }
 
 void HttpHandler::readRequest() {
-    std::cout << "readRequest started " << std::endl;
+
     parser.emplace(
             std::piecewise_construct,
             std::make_tuple(),
             std::make_tuple(std::allocator<char>()));
-
     beast::http::async_read(socket,
                             buffer,
                             *parser,
@@ -48,7 +45,6 @@ void HttpHandler::readRequest() {
 }
 
 void HttpHandler::handleRequest(const beast::http::request<beast::http::string_body> &request) {
-    std::cout << "handleRequest started" << std::endl;
     switch  (request.method()) {
         case beast::http::verb::post: {
             //get file and save
@@ -95,8 +91,7 @@ void HttpHandler::handleRequest(const beast::http::request<beast::http::string_b
             rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
             doc.Accept(writer);
             //generate response
-            std::cout << "generate response" << std::endl;
-            beast::http::response<beast::http::string_body> response;
+            response = beast::http::response<beast::http::string_body>();
             response.result(beast::http::status::ok);
             response.keep_alive(false);
             response.set(beast::http::field::server, "Beast");
@@ -104,10 +99,9 @@ void HttpHandler::handleRequest(const beast::http::request<beast::http::string_b
             response.body() = stringBuffer.GetString();
             response.prepare_payload();
             //write to socket
-            std::cout << "Write to socket" << std::endl;
-            beast::http::response_serializer<boost::beast::http::string_body> responseSerializer(response);
+            responseSerializer.emplace(response);
             beast::http::async_write(socket,
-                                     responseSerializer,
+                                     *responseSerializer,
                                      [this](boost::beast::error_code ec, std::size_t) {
 //                                         socket.shutdown(tcp::socket::shutdown_send, ec);
                                          accept();
@@ -115,7 +109,6 @@ void HttpHandler::handleRequest(const beast::http::request<beast::http::string_b
         }
         break;
         default: {
-            std::cout << "bad response" << std::endl;
             sendBadRespononse(beast::http::status::bad_request,
                               "Invalid request method '" + request.method_string().to_string() +"'\r\n");
         }
@@ -124,7 +117,6 @@ void HttpHandler::handleRequest(const beast::http::request<beast::http::string_b
 
 void HttpHandler::sendBadRespononse(beast::http::status status,
                                     const std::string& error) {
-    std::cout << "send bad response" << std::endl;
     beast::http::response<beast::http::string_body> response;
     response.result(status);
     response.keep_alive(false);
@@ -133,9 +125,9 @@ void HttpHandler::sendBadRespononse(beast::http::status status,
     response.body() = error;
     response.prepare_payload();
 
-    beast::http::response_serializer<boost::beast::http::string_body> responseSerializer(response);
+    responseSerializer.emplace(response);
     beast::http::async_write(socket,
-                             responseSerializer,
+                             *responseSerializer,
                              [this](boost::beast::error_code ec, std::size_t) {
         socket.shutdown(tcp::socket::shutdown_send, ec);
         accept();

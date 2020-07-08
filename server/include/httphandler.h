@@ -25,6 +25,8 @@ private:
     tcp::acceptor& acceptor;
     tcp::socket socket;
     boost::optional<beast::http::request_parser<beast::http::string_body, std::allocator<char>>> parser;
+    beast::http::response<beast::http::string_body> response;
+    boost::optional<beast::http::response_serializer<boost::beast::http::string_body>> responseSerializer;
     beast::multi_buffer buffer;
 
     void accept();
